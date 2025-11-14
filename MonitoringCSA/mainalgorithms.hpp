@@ -42,13 +42,13 @@ GT MultiPairing(vector<G1> a, vector<G2> b);
 
 struct IPPproof;
 
-bool IPPverify(IPPproof pi);
+bool IPPverify(IPPproof *pi);
 
 struct zkIPPproof;
 
 IPPproof zkIPPprove(vector<G2> gg, GT P, vector<G1> ww);
 
-bool zkIPPverify(IPPproof pi);
+bool zkIPPverify(IPPproof *pi);
 
 struct PCS;
 struct PCS_h;
@@ -57,15 +57,19 @@ struct zkbpacc_setup_pcs;
 
 struct ZKMP;
 
-bool ZKMP_verify(ZKMP pi);
+bool ZKMP_verify(ZKMP *pi);
+
+struct AZKMP;
+
+bool AZKMP_verify(AZKMP *pi);
 
 struct ZKNMP;
 
-bool ZKNMP_verify(ZKNMP pi);
+bool ZKNMP_verify(ZKNMP *pi);
 
 struct ZKSP;
 
-bool ZKSP_verify(ZKSP pi);
+bool ZKSP_verify(ZKSP *pi);
 
 G1 memWitGen(
     PCS pcs,
@@ -79,13 +83,13 @@ tuple<G1, G1> nonMemWitGen(
     Fr n    
 );
 
-bool PoK_proof_g2_n_verify(PoK_proof_g2_n pi);
+bool PoK_proof_g2_n_verify(PoK_proof_g2_n *pi);
 
 struct OwnPf;
-bool OwnPf_verify(OwnPf pi);
+bool OwnPf_verify(OwnPf *pi);
 
 struct NonOwnPf;
-bool NonOwnPf_verify(NonOwnPf pi);
+bool NonOwnPf_verify(NonOwnPf *pi);
 
 FrVec constructMemPolyBatch (
     FrVec M,
