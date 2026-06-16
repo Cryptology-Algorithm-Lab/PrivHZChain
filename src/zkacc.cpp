@@ -48,9 +48,9 @@ void PCS::setup(uint32_t D) {
         wmG2.mul(g2si[i], spow[i]);
         wmH2.mul(h2si[i], spow[i]);
     }    
-    this->pp.g1si = g1si;
-    this->pp.g2si = g2si;
-    this->pp.h2si = h2si;
+    this->pp.g1si = std::move(g1si);
+    this->pp.g2si = std::move(g2si);
+    this->pp.h2si = std::move(h2si);
 }
 
 G1 PCS::commit_g1(const FrVec &p) {
