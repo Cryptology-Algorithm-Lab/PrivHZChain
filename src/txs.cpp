@@ -1,7 +1,7 @@
 #include "txs.h"
 
 #define DEBUG 0
-#define VERBOSE 0
+#define VERBOSE 1
 
 // Entry Transcaction
 Tx_Entry Tx_Entry_Gen (
