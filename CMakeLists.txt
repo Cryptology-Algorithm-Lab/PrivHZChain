@@ -45,6 +45,8 @@ target_link_libraries(privhzchain_test PRIVATE
     mcl::mcl_st
     OpenMP::OpenMP_CXX
 )
+# To activate Multithreaded MSM in mcl
+target_compile_definitions(privhzchain_test PRIVATE MCL_USE_OMP=1)
 
 target_compile_options(privhzchain_test PRIVATE $<$<CONFIG:Release>:-O2>)
 
