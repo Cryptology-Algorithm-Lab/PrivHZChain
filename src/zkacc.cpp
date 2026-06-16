@@ -197,34 +197,35 @@ void AZKMP::prove(vector<G2> &C_I, G2 C_A, vector<G1> &pi_I, FrVec r_I, Fr r_A) 
 
     r_r_is.resize(n); r_delta_1s.resize(n); r_delta_2s.resize(n);
 
-    tau_1.setByCSPRNG(); tau_2.setByCSPRNG();
-    r_r_A.setByCSPRNG(); r_tau_1.setByCSPRNG(); r_tau_2.setByCSPRNG();
-
-    // Use Multithreading
-    #pragma omp parallel for
     for (uint32_t i = 0; i < n; i++) {
         r_r_is[i].setByCSPRNG();
         r_delta_1s[i].setByCSPRNG();
-        r_delta_2s[i].setByCSPRNG(); 
-    }
+        r_delta_2s[i].setByCSPRNG();         
+    }    
 
-    // Compute Deltas
+    tau_1.setByCSPRNG(); tau_2.setByCSPRNG();
+    r_r_A.setByCSPRNG(); r_tau_1.setByCSPRNG(); r_tau_2.setByCSPRNG();
+
+
+    // Assign Memory for Deltas 
     FrVec delta_1s; FrVec delta_2s;
     delta_1s.resize(n); delta_2s.resize(n);
 
-    #pragma omp parallel for
-    for (uint32_t i = 0; i < n; i++) {
-        delta_1s[i] = (r_I[i] * tau_1);
-        delta_2s[i] = (r_I[i] * tau_2);
-    }
-
-    // Compute P1 & P2 and obtain a challenge alpha        
+    // Compute P1 & P2
     G1 Frakg_tau_1 = this->setup.Frakg * tau_1;
     this->msg.P_1 = (this->setup.g1 * tau_1) + (this->setup.Frakg * tau_2);        
-    string buf = this->msg.P_1.getStr();
     this->msg.P_2s.resize(n);
+
+    // Merged Loops for Parallelization Efficiency
     for (uint32_t i = 0; i < n; i++) {
+        delta_1s[i] = (r_I[i] * tau_1);
+        delta_2s[i] = (r_I[i] * tau_2);        
         this->msg.P_2s[i] = (pi_I[i] + Frakg_tau_1);
+    }
+
+    // Obtain a challenge alpha
+    string buf = this->msg.P_1.getStr();
+    for (uint32_t i = 0; i < n; i++) {
         buf += this->msg.P_2s[i].getStr();
     }
     Fr alpha;
@@ -251,41 +252,35 @@ void AZKMP::prove(vector<G2> &C_I, G2 C_A, vector<G1> &pi_I, FrVec r_I, Fr r_A) 
 
     // Compute R3
     // IDEA: Merge MSM operations in a part
+    // Prepare Bases
     G2 first; vector<G2> firstMSMBase; firstMSMBase.resize(n+1);
-    #pragma omp parallel for
+    G1 second; vector<G1> secondMSMBase; secondMSMBase.resize(n+1);
     for (uint32_t i = 0; i < n; i++) {
         firstMSMBase[i] = C_I[i];
-    }
+    }    
+    for (uint32_t i = 0; i < n; i++) {
+        secondMSMBase[i] = (this->msg.P_2s[i]);
+    }        
     firstMSMBase[n] = (this->setup.h2);
+    secondMSMBase[n] = (this->setup.g1);
 
+    // Prepare Exponents
     FrVec firstMSMExpon; firstMSMExpon.resize(n+1);
-    #pragma omp parallel for
+    FrVec secondMSMExpon; secondMSMExpon.resize(n+1);
     for (uint32_t i = 0; i < n; i++) {
         firstMSMExpon[i] = (alphaPows[i] * r_tau_1);
+        secondMSMExpon[i] = (alphaPows[i] * r_r_is[i]);
     }
     firstMSMExpon[n] = (
         (- innerProd(alphaPows, r_delta_1s))
     );
-    G2::mulVecMT(first, &firstMSMBase[0], &firstMSMExpon[0], n+1);
-
-    // Second Part
-    G1 second; vector<G1> secondMSMBase; secondMSMBase.resize(n+1);
-    #pragma omp parallel for
-    for (uint32_t i = 0; i < n; i++) {
-        secondMSMBase[i] = (this->msg.P_2s[i]);
-    }
-    secondMSMBase[n] = (this->setup.g1);
-
-    FrVec secondMSMExpon; secondMSMExpon.resize(n+1);
-    #pragma omp parallel for
-    for (uint32_t i = 0; i < n; i++) {
-        secondMSMExpon[i] = (alphaPows[i] * r_r_is[i]);
-    }
     secondMSMExpon[n] = (
         (- sumAllComps(alphaPows)) * r_r_A
     );
+    // Final MSM for each part
+    G2::mulVecMT(first, &firstMSMBase[0], &firstMSMExpon[0], n+1);
     G1::mulVecMT(second, &secondMSMBase[0], &secondMSMExpon[0], n+1);
-
+    
     // Do a final pairing loop
     G1 leftMP[2] = {this->setup.Frakg, second};
     G2 rightMP[2] = {first, this->setup.h2};
@@ -310,7 +305,6 @@ void AZKMP::prove(vector<G2> &C_I, G2 C_A, vector<G1> &pi_I, FrVec r_I, Fr r_A) 
     this->response.s_delta_1s.resize(n);
     this->response.s_delta_2s.resize(n);
 
-    #pragma omp parallel for
     for (uint32_t i = 0; i < n; i++) {
         this->response.s_r_Is[i] = (
             r_r_is[i] + c * r_I[i]
@@ -324,6 +318,7 @@ void AZKMP::prove(vector<G2> &C_I, G2 C_A, vector<G1> &pi_I, FrVec r_I, Fr r_A) 
     }
     // Done!
 }
+
 
 
 bool AZKMP_verify(AZKMP *pi) {
