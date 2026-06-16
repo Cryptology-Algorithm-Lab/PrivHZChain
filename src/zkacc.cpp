@@ -266,7 +266,7 @@ void AZKMP::prove(vector<G2> &C_I, G2 C_A, vector<G1> &pi_I, FrVec r_I, Fr r_A) 
     firstMSMExpon[n] = (
         (- innerProd(alphaPows, r_delta_1s))
     );
-    G2::mulVec(first, &firstMSMBase[0], &firstMSMExpon[0], n+1);
+    G2::mulVecMT(first, &firstMSMBase[0], &firstMSMExpon[0], n+1);
 
     // Second Part
     G1 second; vector<G1> secondMSMBase; secondMSMBase.resize(n+1);
@@ -284,7 +284,7 @@ void AZKMP::prove(vector<G2> &C_I, G2 C_A, vector<G1> &pi_I, FrVec r_I, Fr r_A) 
     secondMSMExpon[n] = (
         (- sumAllComps(alphaPows)) * r_r_A
     );
-    G1::mulVec(second, &secondMSMBase[0], &secondMSMExpon[0], n+1);
+    G1::mulVecMT(second, &secondMSMBase[0], &secondMSMExpon[0], n+1);
 
     // Do a final pairing loop
     G1 leftMP[2] = {this->setup.Frakg, second};
